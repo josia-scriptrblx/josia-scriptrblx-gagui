@@ -34,130 +34,168 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.Name = "AutoSeedBuyerGui"
 screenGui.ResetOnSpawn = false
 
+-- Main Frame
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 220, 0, 300)
+frame.Size = UDim2.new(0, 240, 0, 170)
 frame.Position = UDim2.new(0, 10, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
+frame.ClipsDescendants = true
 
+-- Rounded corners
+local uiCorner = Instance.new("UICorner", frame)
+uiCorner.CornerRadius = UDim.new(0, 12)
+
+-- Title Label
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
 title.Text = "Seed Auto Buyer"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
+title.TextSize = 22
 
+-- Close "X" Button
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 0)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 22
+local closeCorner = Instance.new("UICorner", closeBtn)
+closeCorner.CornerRadius = UDim.new(0, 6)
+
+-- Minimize "-" Button
 local minimizeBtn = Instance.new("TextButton", frame)
 minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
-minimizeBtn.Position = UDim2.new(1, -35, 0, 0)
+minimizeBtn.Position = UDim2.new(1, -70, 0, 0)
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
 minimizeBtn.Text = "-"
 minimizeBtn.Font = Enum.Font.SourceSansBold
-minimizeBtn.TextSize = 24
+minimizeBtn.TextSize = 28
+local minimizeCorner = Instance.new("UICorner", minimizeBtn)
+minimizeCorner.CornerRadius = UDim.new(0, 6)
 
-local seedList = Instance.new("ScrollingFrame", frame)
-seedList.Size = UDim2.new(1, -20, 0, 220)
-seedList.Position = UDim2.new(0, 10, 0, 40)
-seedList.CanvasSize = UDim2.new(0, 0, 0, #seeds * 35)
-seedList.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-seedList.BorderSizePixel = 0
-seedList.ScrollBarThickness = 5
-
-local uiLayout = Instance.new("UIListLayout", seedList)
-uiLayout.Padding = UDim.new(0, 5)
-
-local selectedSeed = nil
-local autoBuyEnabled = false
-local buyThread = nil
-
-for _, seedName in pairs(seeds) do
-    local btn = Instance.new("TextButton", seedList)
-    btn.Size = UDim2.new(1, 0, 0, 30)
-    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Text = seedName
-    btn.Font = Enum.Font.SourceSans
-    btn.TextSize = 18
-
-    btn.MouseButton1Click:Connect(function()
-        selectedSeed = seedName
-        statusLabel.Text = "Selected seed: "..seedName
-    end)
-end
-
+-- Toggle Button
 local toggleBtn = Instance.new("TextButton", frame)
 toggleBtn.Size = UDim2.new(1, -20, 0, 40)
-toggleBtn.Position = UDim2.new(0, 10, 0, 270)
+toggleBtn.Position = UDim2.new(0, 10, 0, 110)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 20
-toggleBtn.Text = "Start Auto-Buy"
+toggleBtn.Text = "Start Auto-Buy All"
+local toggleCorner = Instance.new("UICorner", toggleBtn)
+toggleCorner.CornerRadius = UDim.new(0, 8)
 
+-- Status Label
 local statusLabel = Instance.new("TextLabel", frame)
 statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 0, 315)
+statusLabel.Position = UDim2.new(0, 10, 0, 155)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.new(1, 1, 1)
-statusLabel.Text = "Select a seed to begin"
+statusLabel.Text = "Click start to buy all seeds"
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Font = Enum.Font.SourceSansItalic
 statusLabel.TextSize = 14
 
-local showBtn = Instance.new("TextButton", screenGui)
-showBtn.Size = UDim2.new(0, 60, 0, 30)
-showBtn.Position = UDim2.new(0, 10, 0, 100)
-showBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-showBtn.BorderSizePixel = 0
-showBtn.TextColor3 = Color3.new(1, 1, 1)
-showBtn.Text = "Show"
-showBtn.Font = Enum.Font.SourceSansBold
-showBtn.TextSize = 18
-showBtn.Visible = false
+-- Draggable Minimize Icon (shown when frame minimized)
+local minimizeIcon = Instance.new("TextButton", screenGui)
+minimizeIcon.Size = UDim2.new(0, 40, 0, 40)
+minimizeIcon.Position = UDim2.new(0, 10, 0, 100)
+minimizeIcon.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minimizeIcon.TextColor3 = Color3.new(1, 1, 1)
+minimizeIcon.Text = "☰"
+minimizeIcon.Font = Enum.Font.SourceSansBold
+minimizeIcon.TextSize = 24
+minimizeIcon.Visible = false
+minimizeIcon.AutoButtonColor = false
+local iconCorner = Instance.new("UICorner", minimizeIcon)
+iconCorner.CornerRadius = UDim.new(0, 10)
 
-local function autoBuyLoop()
-    while autoBuyEnabled and selectedSeed do
-        local success, err = pcall(function()
-            buySeedRemote:FireServer(selectedSeed)
+-- Make minimizeIcon draggable
+local dragging = false
+local dragInput, mousePos, framePos
+
+minimizeIcon.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        mousePos = input.Position
+        framePos = minimizeIcon.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
-        if not success then
-            statusLabel.Text = "Error: "..tostring(err)
-            autoBuyEnabled = false
-            toggleBtn.Text = "Start Auto-Buy"
-            break
+    end
+end)
+
+minimizeIcon.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - mousePos
+        minimizeIcon.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Click on minimize icon shows main UI again
+minimizeIcon.MouseButton1Click:Connect(function()
+    frame.Visible = true
+    minimizeIcon.Visible = false
+end)
+
+-- Minimize button hides main UI and shows minimize icon
+minimizeBtn.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    minimizeIcon.Visible = true
+end)
+
+-- Close button destroys everything
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+local autoBuyEnabled = false
+local buyThread = nil
+
+local function autoBuyAllLoop()
+    while autoBuyEnabled do
+        for _, seedName in pairs(seeds) do
+            local success, err = pcall(function()
+                buySeedRemote:FireServer(seedName)
+            end)
+            if not success then
+                statusLabel.Text = "Error: "..tostring(err)
+                autoBuyEnabled = false
+                toggleBtn.Text = "Start Auto-Buy All"
+                break
+            end
+            wait(0.05)
         end
-        wait(0.05)
+        wait(0.1)
     end
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
-    if not selectedSeed then
-        statusLabel.Text = "Please select a seed first!"
-        return
-    end
-
     autoBuyEnabled = not autoBuyEnabled
     if autoBuyEnabled then
-        toggleBtn.Text = "Stop Auto-Buy"
-        statusLabel.Text = "Auto-buying "..selectedSeed.."..."
-        buyThread = coroutine.create(autoBuyLoop)
+        toggleBtn.Text = "Stop Auto-Buy All"
+        statusLabel.Text = "Auto-buying ALL seeds..."
+        buyThread = coroutine.create(autoBuyAllLoop)
         coroutine.resume(buyThread)
     else
-        toggleBtn.Text = "Start Auto-Buy"
+        toggleBtn.Text = "Start Auto-Buy All"
         statusLabel.Text = "Auto-buy stopped."
     end
-end)
-
-minimizeBtn.MouseButton1Click:Connect(function()
-    frame.Visible = false
-    showBtn.Visible = true
-end)
-
-showBtn.MouseButton1Click:Connect(function()
-    frame.Visible = true
-    showBtn.Visible = false
 end)
