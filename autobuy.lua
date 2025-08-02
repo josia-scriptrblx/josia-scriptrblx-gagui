@@ -59,7 +59,9 @@ resizeCorner.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         resizing = true
     end
-end)\nresizeCorner.InputEnded:Connect(function(input)
+end)
+
+resizeCorner.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         resizing = false
     end
@@ -87,6 +89,10 @@ Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 5)
 minimizeBtn.Parent = frame
 
 local minimized = false
+
+-- Declare closeBtn early to avoid reference error
+local closeBtn
+
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     for _, child in pairs(frame:GetChildren()) do
@@ -110,7 +116,7 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = frame
 
 -- Close Button
-local closeBtn = Instance.new("TextButton")
+closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0, 5)
 closeBtn.Text = "X"
