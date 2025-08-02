@@ -130,7 +130,110 @@ closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- [Scroll section + logic continues as before... no changes needed below]
+-- Create ScrollingFrame container
+local scrollContainer = Instance.new("Frame")
+scrollContainer.Size = UDim2.new(1, -20, 1, -110)
+scrollContainer.Position = UDim2.new(0, 10, 0, 40)
+scrollContainer.BackgroundTransparency = 1
+scrollContainer.Parent = frame
 
--- (Retain seed/gear lists, auto-buy logic, and buttons below unchanged)
--- The minimize and resize additions are now included above.
+local seedScroll = Instance.new("ScrollingFrame")
+seedScroll.Size = UDim2.new(0.5, -5, 1, 0)
+seedScroll.Position = UDim2.new(0, 0, 0, 0)
+seedScroll.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+seedScroll.BorderSizePixel = 0
+seedScroll.ScrollBarThickness = 4
+seedScroll.CanvasSize = UDim2.new(0, 0, 0, #seeds * 30)
+seedScroll.Parent = scrollContainer
+
+local gearScroll = Instance.new("ScrollingFrame")
+gearScroll.Size = UDim2.new(0.5, -5, 1, 0)
+gearScroll.Position = UDim2.new(0.5, 10, 0, 0)
+gearScroll.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+gearScroll.BorderSizePixel = 0
+gearScroll.ScrollBarThickness = 4
+gearScroll.CanvasSize = UDim2.new(0, 0, 0, #gearItems * 30)
+gearScroll.Parent = scrollContainer
+
+local seedLayout = Instance.new("UIListLayout")
+seedLayout.Padding = UDim.new(0, 5)
+seedLayout.Parent = seedScroll
+
+local gearLayout = Instance.new("UIListLayout")
+gearLayout.Padding = UDim.new(0, 5)
+gearLayout.Parent = gearScroll
+
+local selectedSeeds = {}
+local selectedGear = {}
+
+local function createCheckItem(parent, nameTable, label, selectionTable)
+    local item = Instance.new("TextButton")
+    item.Size = UDim2.new(1, -10, 0, 25)
+    item.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    item.TextColor3 = Color3.new(1, 1, 1)
+    item.Font = Enum.Font.SourceSans
+    item.TextSize = 18
+    item.Text = label
+    item.Parent = parent
+
+    local box = Instance.new("TextLabel")
+    box.Size = UDim2.new(0, 20, 0, 20)
+    box.Position = UDim2.new(1, -25, 0, 2)
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.Text = "☐"
+    box.Font = Enum.Font.SourceSansBold
+    box.TextSize = 18
+    box.Parent = item
+
+    local checked = false
+    local function update()
+        checked = not checked
+        box.Text = checked and "☑" or "☐"
+        selectionTable[label] = checked or nil
+    end
+
+    item.MouseButton1Click:Connect(update)
+end
+
+for _, seed in ipairs(seeds) do
+    createCheckItem(seedScroll, seeds, seed, selectedSeeds)
+end
+
+for _, gear in ipairs(gearItems) do
+    createCheckItem(gearScroll, gearItems, gear, selectedGear)
+end
+
+-- Auto-buy toggle
+local autoBuy = false
+local autoBuyBtn = Instance.new("TextButton")
+autoBuyBtn.Size = UDim2.new(0, 120, 0, 30)
+autoBuyBtn.Position = UDim2.new(0, 10, 1, -40)
+autoBuyBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 60)
+autoBuyBtn.TextColor3 = Color3.new(1, 1, 1)
+autoBuyBtn.Font = Enum.Font.SourceSansBold
+autoBuyBtn.TextSize = 18
+autoBuyBtn.Text = "Auto-Buy: OFF"
+autoBuyBtn.Parent = frame
+
+autoBuyBtn.MouseButton1Click:Connect(function()
+    autoBuy = not autoBuy
+    autoBuyBtn.Text = autoBuy and "Auto-Buy: ON" or "Auto-Buy: OFF"
+    if autoBuy then
+        spawn(function()
+            while autoBuy do
+                for seed, _ in pairs(selectedSeeds) do
+                    pcall(function()
+                        buySeedRemote:FireServer(seed)
+                    end)
+                end
+                for gear, _ in pairs(selectedGear) do
+                    pcall(function()
+                        buyGearRemote:FireServer(gear)
+                    end)
+                end
+                wait(0.35)
+            end
+        end)
+    end
+end)
