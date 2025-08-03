@@ -6,6 +6,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 print("[AutoBuyGUI] Services loaded.")
 
@@ -122,7 +123,26 @@ autoBuyToggle.MouseButton1Click:Connect(function()
     autoBuyToggle.Text = (autoBuying and "[ ON  ]" or "[ OFF ]") .. " Auto Buy"
 end)
 
--- Buy loop
+-- Buy All Button
+local buyAllBtn = Instance.new("TextButton", frame)
+buyAllBtn.Size = UDim2.new(0, 120, 0, 25)
+buyAllBtn.Position = UDim2.new(0, 150, 1, -55)
+buyAllBtn.Text = "Buy All Selected"
+buyAllBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+buyAllBtn.TextColor3 = Color3.new(1, 1, 1)
+buyAllBtn.Font = Enum.Font.SourceSansBold
+buyAllBtn.TextSize = 14
+
+buyAllBtn.MouseButton1Click:Connect(function()
+    for item, sel in pairs(selectedItems.Seeds) do
+        if sel then buySeedRemote:FireServer(item) end
+    end
+    for item, sel in pairs(selectedItems.Gear) do
+        if sel then buyGearRemote:FireServer(item) end
+    end
+end)
+
+-- Buy loop for AutoBuy
 RunService.Heartbeat:Connect(function()
     if autoBuying then
         for item, sel in pairs(selectedItems.Seeds) do
@@ -155,4 +175,80 @@ credit.Font = Enum.Font.SourceSansItalic
 credit.TextSize = 14
 credit.TextXAlignment = Enum.TextXAlignment.Right
 
-print("[AutoBuyGUI] Ready with tabs, checkboxes, and auto-buy!")
+-- Minimize Button
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(0, 30, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -70, 0, 10)
+minimizeBtn.Text = "➖"
+minimizeBtn.Font = Enum.Font.SourceSansBold
+minimizeBtn.TextSize = 20
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        for _, obj in pairs(frame:GetChildren()) do
+            if obj ~= minimizeBtn and obj ~= xBtn then
+                obj.Visible = false
+            end
+        end
+        frame.Size = UDim2.new(0, 120, 0, 40)
+    else
+        for _, obj in pairs(frame:GetChildren()) do
+            obj.Visible = true
+        end
+        frame.Size = UDim2.new(0, 320, 0, 260)
+    end
+end)
+
+-- X Button (Close)
+local xBtn = Instance.new("TextButton", frame)
+xBtn.Size = UDim2.new(0, 30, 0, 25)
+xBtn.Position = UDim2.new(1, -35, 0, 10)
+xBtn.Text = "✖"
+xBtn.Font = Enum.Font.SourceSansBold
+xBtn.TextSize = 20
+xBtn.BackgroundColor3 = Color3.fromRGB(120, 40, 40)
+xBtn.TextColor3 = Color3.new(1, 1, 1)
+
+xBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- Resizable Corner
+local resizer = Instance.new("Frame", frame)
+resizer.Size = UDim2.new(0, 20, 0, 20)
+resizer.Position = UDim2.new(1, -20, 1, -20)
+resizer.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+resizer.BorderSizePixel = 0
+Instance.new("UICorner", resizer).CornerRadius = UDim.new(0, 5)
+
+local dragging = false
+local dragStart = Vector2.new()
+local startSize = UDim2.new()
+
+resizer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = Vector2.new(input.Position.X, input.Position.Y)
+        startSize = frame.Size
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+resizer.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStart
+        local newWidth = math.clamp(startSize.X.Offset + delta.X, 200, 600)
+        local newHeight = math.clamp(startSize.Y.Offset + delta.Y, 150, 400)
+        frame.Size = UDim2.new(0, newWidth, 0, newHeight)
+    end
+end)
+
+print("[AutoBuyGUI] Ready with full features including X, minimize, buy all, and resizable corner!")
