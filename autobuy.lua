@@ -5,7 +5,7 @@
 -- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 print("[AutoBuyGUI] Services loaded.")
 
@@ -17,7 +17,7 @@ local buySeedRemote = ReplicatedStorage.GameEvents.BuySeedStock
 local buyGearRemote = ReplicatedStorage.GameEvents.BuyGearStock
 print("[AutoBuyGUI] Remotes located.")
 
--- Seed and Gear Lists
+-- Item Lists
 local seeds = {
     "Carrot", "Strawberry", "Blueberry", "Orange Tulip", "Tomato", "Daffodil", "Watermelon",
     "Pumpkin", "Apple", "Bamboo", "Coconut", "Cactus", "Dragon Fruit", "Mango", "Grape",
@@ -32,62 +32,110 @@ local gearItems = {
     "Cleaning Spray", "Favorite Tool", "Harvest Tool"
 }
 
-print("[AutoBuyGUI] Seed and gear lists initialized.")
+print("[AutoBuyGUI] Item lists initialized.")
 
--- Create GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "AutoBuyGUI"
-gui.ResetOnSpawn = false
-gui.Parent = playerGui
-print("[AutoBuyGUI] ScreenGui created and parented.")
-
-local frame = Instance.new("Frame")
+-- GUI Setup
+local gui = Instance.new("ScreenGui", playerGui)
+local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 320, 0, 260)
 frame.Position = UDim2.new(0, 100, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-frame.Parent = gui
-print("[AutoBuyGUI] Main frame initialized.")
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
-print("[AutoBuyGUI] Frame corners rounded.")
-
--- Tabs UI
-local tabHolder = Instance.new("Frame")
-tabHolder.Size = UDim2.new(1, -20, 0, 30)
-tabHolder.Position = UDim2.new(0, 10, 0, 40)
-tabHolder.BackgroundTransparency = 1
-tabHolder.Parent = frame
-
+-- Tabs
 local tabs = { "Seeds", "Gear" }
 local activeTab = "Seeds"
 local tabButtons = {}
+local contentFrames = {}
+local selectedItems = { Seeds = {}, Gear = {} }
 
-for i, name in ipairs(tabs) do
-    local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0, 80, 0, 25)
-    tabBtn.Position = UDim2.new(0, (i - 1) * 90, 0, 0)
-    tabBtn.Text = name
-    tabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    tabBtn.TextColor3 = Color3.new(1, 1, 1)
-    tabBtn.Font = Enum.Font.SourceSansBold
-    tabBtn.TextSize = 16
-    tabBtn.Parent = tabHolder
-    tabButtons[name] = tabBtn
+local tabHolder = Instance.new("Frame", frame)
+tabHolder.Size = UDim2.new(1, -20, 0, 30)
+tabHolder.Position = UDim2.new(0, 10, 0, 40)
+tabHolder.BackgroundTransparency = 1
 
-    tabBtn.MouseButton1Click:Connect(function()
-        activeTab = name
-        print("[AutoBuyGUI] Switched to tab:", name)
-        -- Add tab switching logic when needed
+for i, tab in ipairs(tabs) do
+    local btn = Instance.new("TextButton", tabHolder)
+    btn.Size = UDim2.new(0, 80, 0, 25)
+    btn.Position = UDim2.new(0, (i - 1) * 90, 0, 0)
+    btn.Text = tab
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+
+    local scroll = Instance.new("ScrollingFrame", frame)
+    scroll.Name = tab .. "Content"
+    scroll.Size = UDim2.new(1, -20, 1, -130)
+    scroll.Position = UDim2.new(0, 10, 0, 80)
+    scroll.BackgroundTransparency = 1
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ScrollBarThickness = 6
+    scroll.Visible = (tab == activeTab)
+    contentFrames[tab] = scroll
+
+    local list = (tab == "Seeds") and seeds or gearItems
+    local y = 0
+    for _, item in ipairs(list) do
+        local check = Instance.new("TextButton", scroll)
+        check.Size = UDim2.new(1, -10, 0, 20)
+        check.Position = UDim2.new(0, 0, 0, y)
+        check.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        check.TextColor3 = Color3.new(1, 1, 1)
+        check.TextSize = 14
+        check.Font = Enum.Font.SourceSans
+        check.Text = "[ ] " .. item
+        y = y + 24
+
+        check.MouseButton1Click:Connect(function()
+            local selected = selectedItems[tab][item]
+            selectedItems[tab][item] = not selected
+            check.Text = (not selected and "[✔] " or "[ ] ") .. item
+        end)
+    end
+    scroll.CanvasSize = UDim2.new(0, 0, 0, y)
+
+    btn.MouseButton1Click:Connect(function()
+        activeTab = tab
+        for t, f in pairs(contentFrames) do
+            f.Visible = (t == tab)
+        end
     end)
 end
 
--- Icons (Placeholder labels for now)
-local icon = Instance.new("TextLabel")
+-- AutoBuy Toggle
+local autoBuyToggle = Instance.new("TextButton", frame)
+autoBuyToggle.Size = UDim2.new(0, 120, 0, 25)
+autoBuyToggle.Position = UDim2.new(0, 10, 1, -55)
+autoBuyToggle.Text = "[ OFF ] Auto Buy"
+autoBuyToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+autoBuyToggle.TextColor3 = Color3.new(1, 1, 1)
+autoBuyToggle.Font = Enum.Font.SourceSansBold
+autoBuyToggle.TextSize = 14
+
+local autoBuying = false
+autoBuyToggle.MouseButton1Click:Connect(function()
+    autoBuying = not autoBuying
+    autoBuyToggle.Text = (autoBuying and "[ ON  ]" or "[ OFF ]") .. " Auto Buy"
+end)
+
+-- Buy loop
+RunService.Heartbeat:Connect(function()
+    if autoBuying then
+        for item, sel in pairs(selectedItems.Seeds) do
+            if sel then buySeedRemote:FireServer(item) end
+        end
+        for item, sel in pairs(selectedItems.Gear) do
+            if sel then buyGearRemote:FireServer(item) end
+        end
+    end
+end)
+
+-- Icon
+local icon = Instance.new("TextLabel", frame)
 icon.Size = UDim2.new(0, 20, 0, 20)
 icon.Position = UDim2.new(0, 10, 0, 10)
 icon.Text = "🌱"
@@ -95,10 +143,9 @@ icon.TextColor3 = Color3.new(1, 1, 1)
 icon.Font = Enum.Font.SourceSansBold
 icon.TextSize = 20
 icon.BackgroundTransparency = 1
-icon.Parent = frame
 
--- Credit Label
-local credit = Instance.new("TextLabel")
+-- Credit
+local credit = Instance.new("TextLabel", frame)
 credit.Size = UDim2.new(1, -20, 0, 20)
 credit.Position = UDim2.new(0, 10, 1, -20)
 credit.BackgroundTransparency = 1
@@ -107,12 +154,5 @@ credit.TextColor3 = Color3.fromRGB(120, 255, 120)
 credit.Font = Enum.Font.SourceSansItalic
 credit.TextSize = 14
 credit.TextXAlignment = Enum.TextXAlignment.Right
-credit.Parent = frame
-print("[AutoBuyGUI] Credit label added.")
 
-print("[AutoBuyGUI] Tabs and icons added.")
-
--- Add more menus/structure later as needed...
-
--- Keep existing UI below...
-print("[AutoBuyGUI] Initialization complete.")
+print("[AutoBuyGUI] Ready with tabs, checkboxes, and auto-buy!")
